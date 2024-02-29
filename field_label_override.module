@@ -1,0 +1,148 @@
+<?php
+
+/**
+ * @file
+ * Allows administrators to override a field label per entity view mode.
+ */
+
+ use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+ use Drupal\Core\Form\FormStateInterface;
+ use Drupal\Core\Routing\RouteMatchInterface;
+ use Drupal\Core\StringTranslation\TranslatableMarkup;
+ use Drupal\field_label_override\Form\FieldLabelOverrideFormBase;
+
+/**
+ * Implements hook_help().
+ */
+function field_label_override_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.field_label_override':
+      $output = '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Field Label Override allows administrators to set custom labels to fields per entity view mode.') . '</p>';
+      $output .= '<p>' . t('E.g. The content type <em>Article</em> has the field <strong>Body</strong>. Using this module, it is possible to set the label of this field to be displayed as <strong>Full Description</strong> for the <em>Default (Full)</em> view mode, where the full content of the field is rendered, and <strong>Short Description</strong> for the <em>Teaser</em> view mode, where only a summary or a trimmed version of the content is presented.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function field_label_override_form_entity_view_display_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  if (isset($form['fields'])) {
+    // Attach library.
+    $form['#attached']['library'][] = 'field_label_override/entity_view_display_form';
+
+    // Add header.
+    array_splice($form['fields']['#header'], -1, 0, [t('Label Override')]);
+
+    // Add custom submit function right before the last callback.
+    if (!in_array('field_label_override_form_submit', $form['actions']['submit']['#submit'])) {
+      array_splice($form['actions']['submit']['#submit'], -1, 0, ['field_label_override_form_submit']);
+    }
+
+    foreach ($form['fields'] as $field_name => $field_settings) {
+      if (isset($field_settings['label']['#options'])) {
+        // Add options for overriding the label to the Label setting options.
+        $options_override = [
+          'above_overriden' => new TranslatableMarkup('Above (Overriden)'),
+          'inline_overriden' => new TranslatableMarkup('Inline (Overriden)'),
+          'visually_hidden_overriden' => new TranslatableMarkup('- Visually Hidden (Overriden) -'),
+        ];
+        $form['fields'][$field_name]['label']['#options'] = array_merge($field_settings['label']['#options'], $options_override);
+        
+        if (isset($field_settings['label']['#default_value'])
+          && in_array($field_settings['label']['#default_value'], array_keys($options_override))
+        ) {
+          if (isset($field_settings['#region_callback'][0])
+            && is_object($field_settings['#region_callback'][0])
+            && $field_settings['#region_callback'][0]->getEntity() instanceof EntityViewDisplayInterface
+          ) {
+            // Get values from configuration and build form elements.
+            $label_override = $field_settings['#region_callback'][0]->getEntity()->getComponent($field_name)['third_party_settings']['field_label_override']['label_override'] ?? NULL;
+            $preserve_label = $field_settings['#region_callback'][0]->getEntity()->getComponent($field_name)['third_party_settings']['field_label_override']['preserve_label'] ?? FALSE;
+            $form_element = [
+              '#type' => 'container',
+              'label_override' => [
+                '#type' => 'textfield',
+                '#title' => t('Override label'),
+                '#default_value' => $label_override ?? NULL,
+                '#size' => 20,
+                '#maxlength' => 255,
+              ],
+              'preserve_label' => [
+                '#type' => 'checkbox',
+                '#title' => t('Preserve original label'),
+                '#default_value' => $preserve_label ?? FALSE,
+              ],
+            ];
+          }
+
+          // Add Label Override container right after the Label item.
+          $label_index = array_search('label', array_keys($field_settings));
+          $form['fields'][$field_name] = array_slice($form['fields'][$field_name], 0, $label_index + 1, TRUE) +
+          ['label_override_container' => $form_element] +
+          array_slice($form['fields'][$field_name], $label_index + 1, count($form['fields'][$field_name]) - 1, TRUE);
+        }
+        else {
+          // Extend Label cell to two columns if label is not overriden.
+          $form['fields'][$field_name]['label']['#cell_attributes']['colspan'] = 2;
+          $form['fields'][$field_name]['label']['#cell_attributes']['class'][] = 'no-label-override';
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Custom form submit to handle label override settings.
+ *
+ * @param array $form
+ *   Form array.
+ * @param FormStateInterface $form_state
+ *   Form state object.
+ */
+function field_label_override_form_submit(array &$form, FormStateInterface $form_state) {
+  $values = $form_state->getValues();
+  if (isset($values['fields'])) {
+    $build_info = $form_state->getBuildInfo();
+    $entity_view_display = isset($build_info['callback_object']) ? $build_info['callback_object']->getEntity() : NULL;
+  
+    if ($entity_view_display instanceof EntityViewDisplayInterface) {
+      $display_components = $entity_view_display->getComponents();
+      foreach ($values['fields'] as $field_name => $field_config) {
+        if (isset($field_config['label'], $field_config['label_override_container'])
+          && str_ends_with($field_config['label'], '_overriden')
+        ) {
+          $display_components[$field_name]['third_party_settings']['field_label_override'] = [
+            'label_override' => $field_config['label_override_container']['label_override'] ?? NULL,
+            'preserve_label' => !empty($field_config['label_override_container']['preserve_label']) ?? FALSE,
+          ];
+          $entity_view_display->setComponent($field_name, $display_components[$field_name]);
+        }
+        else if (isset($display_components[$field_name]['third_party_settings']['field_label_override'])) {
+          unset($display_components[$field_name]['third_party_settings']['field_label_override']);
+          $entity_view_display->setComponent($field_name, $display_components[$field_name]);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_field().
+ */
+function field_label_override_preprocess_field(&$variables, $hook) {
+  // If "Preserve original label" is checked, create a new variable item
+  // containing the label override, which can be used in the twig template.
+  // Otherwise, override the original label variable.
+  if (isset($variables['element']['#third_party_settings']['field_label_override']['label_override'])) {
+    if (isset($variables['element']['#third_party_settings']['field_label_override']['preserve_label'])
+      && !empty($variables['element']['#third_party_settings']['field_label_override']['preserve_label'])
+    ) {
+      $variables['label_override'] = $variables['element']['#third_party_settings']['field_label_override']['label_override'];
+    }
+    else {
+      $variables['label'] = $variables['element']['#third_party_settings']['field_label_override']['label_override'];
+    }
+  }
+}

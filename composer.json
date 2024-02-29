@@ -1,0 +1,22 @@
+{
+  "name": "drupal/field_label_override",
+  "type": "drupal-module",
+  "description": "Allows setting custom labels to entity fields per view mode",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0-or-later",
+  "homepage": "https://www.drupal.org/project/field_label_override",
+  "authors": [
+    {
+        "name": "Mauricio Silveira (maursilveira)",
+        "homepage": "https://www.drupal.org/u/maursilveira",
+        "role": "Maintainer"
+    }
+  ],
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/field_label_override",
+    "source": "https://git.drupalcode.org/project/field_label_override"
+  },
+  "require": {
+    "php": ">=8.0"
+  }
+}

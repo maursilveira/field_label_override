@@ -1,0 +1,5 @@
+entity_view_display_form:
+  version: VERSION
+  css:
+    theme:
+      css/entity_view_display_form.css: {}

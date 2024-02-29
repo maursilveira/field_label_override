@@ -1,0 +1,7 @@
+name: 'Field Label Override'
+type: module
+description: 'Provides the ability to override a field label per entity view display.'
+package : Fields
+core_version_requirement: ^10
+dependencies:
+  - drupal:field

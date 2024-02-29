@@ -1,0 +1,10 @@
+core.entity_view_display.*.*.*.content.*.third_party.field_label_override:
+  type: config_object
+  label: 'Field Label Override settings on entity view'
+  mapping:
+    label_override:
+      type: string
+      label: 'Override label'
+    preserve_label:
+      type: boolean
+      label: 'Preserve original label'
