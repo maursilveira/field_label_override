@@ -5,4 +5,4 @@ Example: The content type *Article* has the field **Body**. Using this module, i
 This module includes two settings:
 
 **Override label**: The label to be used for the field in that respective view mode.
-**Preserve original label**: Checkbox to determine if the original field label will be preserved. If checked, the original label will not be changed, and a new variable `label_override` will be available in the field twig template, containin the custom label. If unchecked, the original `label` will be completely overriden by the custom label.
+**Preserve original label**: Checkbox to determine if the original field label will be preserved. If checked, the original label will not be changed, and a new variable `label_override` will be available in the field twig template, containin the custom label. If unchecked, the original `label` will be completely overridden by the custom label.

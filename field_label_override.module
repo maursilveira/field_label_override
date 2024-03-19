@@ -44,9 +44,9 @@ function field_label_override_form_entity_view_display_edit_form_alter(&$form, F
       if (isset($field_settings['label']['#options'])) {
         // Add options for overriding the label to the Label setting options.
         $options_override = [
-          'above_overriden' => new TranslatableMarkup('Above (Overriden)'),
-          'inline_overriden' => new TranslatableMarkup('Inline (Overriden)'),
-          'visually_hidden_overriden' => new TranslatableMarkup('- Visually Hidden (Overriden) -'),
+          'above_overridden' => new TranslatableMarkup('Above (Overridden)'),
+          'inline_overridden' => new TranslatableMarkup('Inline (Overridden)'),
+          'visually_hidden_overridden' => new TranslatableMarkup('- Visually Hidden (Overridden) -'),
         ];
         $form['fields'][$field_name]['label']['#options'] = array_merge($field_settings['label']['#options'], $options_override);
         
@@ -84,7 +84,7 @@ function field_label_override_form_entity_view_display_edit_form_alter(&$form, F
           array_slice($form['fields'][$field_name], $label_index + 1, count($form['fields'][$field_name]) - 1, TRUE);
         }
         else {
-          // Extend Label cell to two columns if label is not overriden.
+          // Extend Label cell to two columns if label is not overridden.
           $form['fields'][$field_name]['label']['#cell_attributes']['colspan'] = 2;
           $form['fields'][$field_name]['label']['#cell_attributes']['class'][] = 'no-label-override';
         }
@@ -111,7 +111,7 @@ function field_label_override_form_submit(array &$form, FormStateInterface $form
       $display_components = $entity_view_display->getComponents();
       foreach ($values['fields'] as $field_name => $field_config) {
         if (isset($field_config['label'], $field_config['label_override_container'])
-          && str_ends_with($field_config['label'], '_overriden')
+          && str_ends_with($field_config['label'], '_overridden')
         ) {
           $display_components[$field_name]['third_party_settings']['field_label_override'] = [
             'label_override' => $field_config['label_override_container']['label_override'] ?? NULL,
