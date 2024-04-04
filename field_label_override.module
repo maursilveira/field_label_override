@@ -32,13 +32,10 @@ function field_label_override_form_entity_view_display_edit_form_alter(&$form, F
     // Attach library.
     $form['#attached']['library'][] = 'field_label_override/entity_view_display_form';
 
-    // Add header.
-    array_splice($form['fields']['#header'], -1, 0, [t('Label Override')]);
-
-    // Add custom submit function right before the last callback.
-    if (!in_array('field_label_override_form_submit', $form['actions']['submit']['#submit'])) {
-      array_splice($form['actions']['submit']['#submit'], -1, 0, ['field_label_override_form_submit']);
-    }
+    // Initialize a variable to track if any overridden label option is used.
+    $any_overridden = FALSE;
+    // Variable to hold non-overridden field names.
+    $no_overridden_fields = [];
 
     foreach ($form['fields'] as $field_name => $field_settings) {
       if (isset($field_settings['label']['#options'])) {
@@ -49,10 +46,14 @@ function field_label_override_form_entity_view_display_edit_form_alter(&$form, F
           'visually_hidden_overridden' => new TranslatableMarkup('- Visually Hidden (Overridden) -'),
         ];
         $form['fields'][$field_name]['label']['#options'] = array_merge($field_settings['label']['#options'], $options_override);
-        
+
         if (isset($field_settings['label']['#default_value'])
           && in_array($field_settings['label']['#default_value'], array_keys($options_override))
         ) {
+          // Set the flag to TRUE if any overridden label option is used.
+          $any_overridden = TRUE;
+
+          // Get values from configuration and build form elements.
           if (isset($field_settings['#region_callback'][0])
             && is_object($field_settings['#region_callback'][0])
             && $field_settings['#region_callback'][0]->getEntity() instanceof EntityViewDisplayInterface
@@ -75,19 +76,35 @@ function field_label_override_form_entity_view_display_edit_form_alter(&$form, F
                 '#default_value' => $preserve_label ?? FALSE,
               ],
             ];
-          }
 
-          // Add Label Override container right after the Label item.
-          $label_index = array_search('label', array_keys($field_settings));
-          $form['fields'][$field_name] = array_slice($form['fields'][$field_name], 0, $label_index + 1, TRUE) +
-          ['label_override_container' => $form_element] +
-          array_slice($form['fields'][$field_name], $label_index + 1, count($form['fields'][$field_name]) - 1, TRUE);
+            // Add Label Override container right after the Label item.
+            $label_index = array_search('label', array_keys($field_settings));
+            $form['fields'][$field_name] = array_slice($form['fields'][$field_name], 0, $label_index + 1, TRUE) +
+            ['label_override_container' => $form_element] +
+            array_slice($form['fields'][$field_name], $label_index + 1, count($form['fields'][$field_name]) - 1, TRUE);
+          }
+        } else {
+          // Add field name to array containing non-ovverridden fields.
+          $no_overridden_fields[] = $field_name;
         }
-        else {
-          // Extend Label cell to two columns if label is not overridden.
-          $form['fields'][$field_name]['label']['#cell_attributes']['colspan'] = 2;
-          $form['fields'][$field_name]['label']['#cell_attributes']['class'][] = 'no-label-override';
-        }
+      }
+    }
+
+    // Add header only if any overridden label option is used.
+    if ($any_overridden) {
+      // Add header.
+      array_splice($form['fields']['#header'], -1, 0, [t('Label Override')]);
+
+      // Extend Label cell to two columns for fields
+      // whose label is not overridden.
+      foreach ($no_overridden_fields as $field_name) {
+        $form['fields'][$field_name]['label']['#cell_attributes']['colspan'] = 2;
+        $form['fields'][$field_name]['label']['#cell_attributes']['class'][] = 'no-label-override';
+      }
+
+      // Add custom submit function right before the last callback.
+      if (!in_array('field_label_override_form_submit', $form['actions']['submit']['#submit'])) {
+        array_splice($form['actions']['submit']['#submit'], -1, 0, ['field_label_override_form_submit']);
       }
     }
   }
