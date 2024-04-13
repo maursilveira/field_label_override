@@ -15,8 +15,5 @@
   "support": {
     "issues": "https://www.drupal.org/project/issues/field_label_override",
     "source": "https://git.drupalcode.org/project/field_label_override"
-  },
-  "require": {
-    "php": ">=8.0"
   }
 }
