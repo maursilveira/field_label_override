@@ -13,7 +13,7 @@
     }
   ],
   "support": {
-    "issues": "https://www.drupal.org/project/issues/field_label_override",
+    "issues": "https://git.drupalcode.org/project/field_label_override/-/work_items",
     "source": "https://git.drupalcode.org/project/field_label_override"
   }
 }
