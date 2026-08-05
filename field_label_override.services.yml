@@ -1,0 +1,4 @@
+services:
+  Drupal\field_label_override\Hook\FieldLabelOverrideHooks:
+    class: Drupal\field_label_override\Hook\FieldLabelOverrideHooks
+    autowire: true

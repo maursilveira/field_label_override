@@ -16,7 +16,7 @@ Example: The content type *Article* has the field **Body**. Using this module, i
 
 ## Requirements
 
-This module requires Drupal core >= 10.0.
+This module requires Drupal core >= 10.1.
 
 ## Installation
 
